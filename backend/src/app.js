@@ -11,13 +11,20 @@ export function createApp() {
   // CLIENT_ORIGIN can be a single origin or a comma-separated list (e.g. a
   // production domain plus Vercel preview URLs). Unset means allow any
   // origin, which is fine for local dev but should be set in production.
-  const allowedOrigins = process.env.CLIENT_ORIGIN
+  const configuredOrigins = process.env.CLIENT_ORIGIN
     ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim())
-    : '*'
+    : null
 
   app.use(
     cors({
-      origin: allowedOrigins === '*' ? '*' : allowedOrigins,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true)
+        if (!configuredOrigins || configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+          return callback(null, true)
+        }
+        return callback(new Error('Not allowed by CORS'))
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
