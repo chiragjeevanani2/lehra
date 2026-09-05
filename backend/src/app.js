@@ -8,28 +8,24 @@ import favoritesRouter from './routes/favorites.js'
 export function createApp() {
   const app = express()
 
-  // CLIENT_ORIGIN can be a single origin or a comma-separated list (e.g. a
-  // production domain plus Vercel preview URLs). Unset means allow any
-  // origin, which is fine for local dev but should be set in production.
-  const configuredOrigins = process.env.CLIENT_ORIGIN
-    ? process.env.CLIENT_ORIGIN.split(',').map((o) => o.trim())
-    : null
+  // Robust CORS handler that reliably sets headers for Vercel, localhost, and preview URLs
+  app.use((req, res, next) => {
+    const origin = req.headers.origin
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+      res.setHeader('Access-Control-Allow-Credentials', 'true')
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*')
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+    res.setHeader('Vary', 'Origin')
 
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, server-to-server)
-        if (!origin) return callback(null, true)
-        if (!configuredOrigins || configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
-          return callback(null, true)
-        }
-        return callback(new Error('Not allowed by CORS'))
-      },
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  )
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204)
+    }
+    next()
+  })
   app.use(express.json())
 
   // Support both /api prefixed routes and root routes
