@@ -8,7 +8,11 @@ import favoritesRouter from './routes/favorites.js'
 export function createApp() {
   const app = express()
 
-  app.use(cors())
+  // CLIENT_ORIGIN can be a single origin or a comma-separated list (e.g. a
+  // production domain plus Vercel preview URLs). Unset means allow any
+  // origin, which is fine for local dev but should be set in production.
+  const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',').map((o) => o.trim())
+  app.use(cors(allowedOrigins ? { origin: allowedOrigins } : undefined))
   app.use(express.json())
 
   app.use('/api/health', healthRouter)
