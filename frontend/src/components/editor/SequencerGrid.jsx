@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 import { SARGAM_ROWS } from '../../editor/sargam'
 
 const MIN_CELL_WIDTH = 15
-const OCTAVE_COL_WIDTH = 34
-const LABEL_COL_WIDTH = 48
+const PIANO_COL_WIDTH = 64
 const HEADER_HEIGHT = 28
 const ROW_HEIGHT = 22
 
@@ -148,16 +147,16 @@ export function SequencerGrid({
         <div
           className="grid select-none"
           style={{
-            gridTemplateColumns: `${OCTAVE_COL_WIDTH}px ${LABEL_COL_WIDTH}px repeat(${totalSteps}, minmax(${MIN_CELL_WIDTH}px, 1fr))`,
+            gridTemplateColumns: `${PIANO_COL_WIDTH}px repeat(${totalSteps}, minmax(${MIN_CELL_WIDTH}px, 1fr))`,
             minWidth: 'max-content',
           }}
         >
           {/* Top-Left Corner Header (Sticky Top & Left) */}
           <div
-            className="sticky top-0 left-0 z-30 flex items-center justify-center font-bold text-[10px] uppercase tracking-wider text-neutral-400 dark:text-neutral-500 bg-[#f6f8fb] dark:bg-[#161722] border-b border-r border-neutral-200/80 dark:border-neutral-800 col-span-2 shadow-xs select-none"
+            className="sticky top-0 left-0 z-30 flex items-center justify-center font-bold text-[10px] uppercase tracking-wider text-neutral-400 dark:text-neutral-500 bg-[#f6f8fb] dark:bg-[#161722] border-b border-r border-neutral-200/80 dark:border-neutral-800 shadow-xs select-none"
             style={{ height: `${HEADER_HEIGHT}px` }}
           >
-            Saptak
+            Key
           </div>
 
           {/* Step / Beat Numbers Ruler (Sticky Top) */}
@@ -237,49 +236,47 @@ function FragmentRow({
   onCellPointerEnter,
   onPreviewNote,
 }) {
-  // Zebra striping: komal/teevra (accidental) rows shaded matching reference DAW piano roll
+  // Zebra striping: black-key (accidental) rows shaded matching reference DAW piano roll
   const isAccidental = row.isAccidental
   const rowBg = isAccidental
     ? 'bg-[#edf1f8] dark:bg-[#171826]'
     : 'bg-white dark:bg-[#10111a]'
+  const isC = row.isSa
 
   return (
     <>
-      {/* Octave Column Indicator (e.g. C7, C6, C5, C4, C3) - Sticky Left */}
+      {/* Piano Key Cell (e.g. C4, C#4, D4...) - Sticky Left, styled as a piano key */}
       <div
         data-semitone={row.semitone}
         data-madhya-sa={row.isMadhyaSa ? 'true' : undefined}
         onClick={() => onPreviewNote?.(row.semitone)}
-        className={`sticky left-0 z-10 flex items-center justify-center text-[10px] font-bold border-r border-b border-neutral-200/60 dark:border-neutral-800/80 cursor-pointer select-none transition-colors ${
-          row.isMadhyaSa
-            ? 'bg-red-500 text-white font-extrabold shadow-xs'
-            : row.isSa
-            ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold'
-            : 'bg-[#fafafa] dark:bg-[#141520] text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-        }`}
+        className={`relative sticky left-0 z-10 border-b cursor-pointer select-none transition-colors ${
+          isOctaveStart ? 'border-b-neutral-400 dark:border-b-neutral-600' : 'border-b-neutral-200/60 dark:border-b-neutral-800/60'
+        } ${isAccidental ? 'bg-[#f4f6fa] dark:bg-[#20212f]' : 'bg-white dark:bg-[#2e2f42]'}`}
         style={{ height: `${ROW_HEIGHT}px` }}
-        title={`${row.saptak} (${row.octave}) - Click to preview`}
+        title={`${row.pitch} (${row.saptak} ${row.label}) - Click to audition`}
       >
-        {isOctaveStart || row.isSa ? row.octave : ''}
-      </div>
-
-      {/* Swara Name Label (e.g. Sa, re, Re, ga, Ga, ma, Ma, Pa, dha, Dha, ni, Ni) - Sticky Left at 34px */}
-      <div
-        onClick={() => onPreviewNote?.(row.semitone)}
-        className={`sticky z-10 flex items-center justify-end pr-2.5 text-[11px] font-medium border-r border-b border-neutral-200/60 dark:border-neutral-800/80 cursor-pointer select-none transition-colors ${
-          row.isSa
-            ? 'font-bold text-red-600 dark:text-red-400 bg-red-50/80 dark:bg-red-950/40'
-            : isAccidental
-            ? 'text-neutral-500 dark:text-neutral-400 bg-[#e8ecf4] dark:bg-[#161724]'
-            : 'text-neutral-700 dark:text-neutral-200 bg-white dark:bg-[#10111a]'
-        } hover:text-red-600 dark:hover:text-red-400`}
-        style={{ left: `${OCTAVE_COL_WIDTH}px`, height: `${ROW_HEIGHT}px` }}
-        title={`${row.label} (${row.pitch}) - Click to audition`}
-      >
-        <span className="flex items-center gap-1">
-          {row.label}
-          {row.isSa && <span className="w-1 h-1 rounded-full bg-red-500" />}
-        </span>
+        {isAccidental ? (
+          /* Black key: short dark tab overlaying the white lane */
+          <div
+            className="absolute inset-y-0 left-0 flex items-center pl-1.5 rounded-r-[3px] bg-neutral-900 dark:bg-black shadow-sm hover:bg-neutral-700 dark:hover:bg-neutral-800 transition-colors"
+            style={{ width: '62%' }}
+          >
+            <span className="text-[9px] font-medium text-neutral-300">{row.pitch}</span>
+          </div>
+        ) : (
+          /* White key: full-width label, root (C) note called out in red */
+          <div className="h-full flex items-center justify-end pr-2 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
+            <span
+              className={`text-[10px] flex items-center gap-1 ${
+                isC ? 'font-bold text-red-600 dark:text-red-400' : 'font-medium text-neutral-500 dark:text-neutral-400'
+              }`}
+            >
+              {isC && <span className="w-1 h-1 rounded-full bg-red-500" />}
+              {row.pitch}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Grid Step Cells */}
